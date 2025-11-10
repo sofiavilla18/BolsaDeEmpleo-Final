@@ -17,7 +17,7 @@ jobs:
   - task: UseDotNet@2
     inputs:
       packageType: 'sdk'
-      version: '6.0.x'
+      version: '8.0.x'
 
   # Cambiado: usar 'dotnet publish' en lugar de 'dotnet build'
   - script: dotnet publish --configuration Release --output $(Build.ArtifactStagingDirectory)
