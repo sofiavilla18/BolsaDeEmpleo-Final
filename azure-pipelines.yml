@@ -3,20 +3,12 @@
 # Add steps that run tests, create a NuGet package, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
-# ASP.NET Core Pipeline - Build + Test paralelos
-
-# ASP.NET Core
-# Build and test ASP.NET Core projects targeting .NET Core.
-# Add steps that run tests, create a NuGet package, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
-
 trigger:
 - master
 
 pool:
   vmImage: 'windows-latest'
 
-# Paso 1: Compilación con un solo agente
 jobs:
 - job: Build
   displayName: 'Build job (single agent)'
@@ -26,15 +18,14 @@ jobs:
       packageType: 'sdk'
       version: '8.0.x'
 
-  # Ejecutar pruebas específicas antes de publicar
   - script: dotnet test mst_pruebas/mst_pruebas.csproj --filter "Name=Guardar"
-    displayName: 'Run specific test: Guardar'
+    displayName: 'Publish compiled output'
 
-  # Publicar los artefactos de compilación
   - task: PublishBuildArtifacts@1
     inputs:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)'
       ArtifactName: 'drop'
+
 
 # Paso 2: Ejecución de pruebas en paralelo
 - job: Test
@@ -52,7 +43,6 @@ jobs:
       artifactName: 'drop'
       downloadPath: '$(System.DefaultWorkingDirectory)'
 
-  # Ejecución de todas las pruebas con tolerancia a fallos
   - task: VSTest@2
     continueOnError: true
     inputs:
@@ -62,6 +52,3 @@ jobs:
       searchFolder: '$(System.DefaultWorkingDirectory)\drop'
       runInParallel: true
       codeCoverageEnabled: true
-
-
-
