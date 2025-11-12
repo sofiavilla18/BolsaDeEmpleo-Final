@@ -3,13 +3,15 @@
 # Add steps that run tests, create a NuGet package, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
 
+# ASP.NET Core Pipeline - Build + Test paralelos
+
 trigger:
 - master
 
 pool:
   vmImage: 'windows-latest'
 
-# Paso 1: Compilación con un solo agente
+# Paso 1: Compilación y publicación del artefacto
 jobs:
 - job: Build
   displayName: 'Build job (single agent)'
@@ -19,25 +21,27 @@ jobs:
       packageType: 'sdk'
       version: '8.0.x'
 
-  # Cambiado: usar 'dotnet publish' en lugar de 'dotnet build'
-  - script: dotnet test mst_pruebas/mst_pruebas.csproj --filter "Name=Guardar"
-    displayName: 'Publish compiled output'
+  # Compila y publica el proyecto principal
+  - script: dotnet publish mst_pruebas/mst_pruebas.csproj -c Release -o $(Build.ArtifactStagingDirectory)
+    displayName: 'Build and publish project'
 
+  # Publica el artefacto resultante
   - task: PublishBuildArtifacts@1
     inputs:
       PathtoPublish: '$(Build.ArtifactStagingDirectory)'
       ArtifactName: 'drop'
-
+      publishLocation: 'Container'
 
 # Paso 2: Ejecución de pruebas en paralelo
 - job: Test
   displayName: 'Run tests in parallel'
-  dependsOn: Build  # Espera que termine el job anterior
+  dependsOn: Build  # Espera a que el job de compilación termine
   pool:
     vmImage: 'windows-latest'
   strategy:
     parallel: 2  # Ejecuta los tests en 2 agentes en paralelo
   steps:
+  # Descarga el artefacto "drop" generado en el job anterior
   - task: DownloadBuildArtifacts@1
     inputs:
       buildType: 'current'
@@ -45,6 +49,7 @@ jobs:
       artifactName: 'drop'
       downloadPath: '$(System.DefaultWorkingDirectory)'
 
+  # Ejecuta los tests dentro del artefacto descargado
   - task: VSTest@2
     inputs:
       testSelector: 'testAssemblies'
@@ -53,4 +58,5 @@ jobs:
       searchFolder: '$(System.DefaultWorkingDirectory)\drop'
       runInParallel: true
       codeCoverageEnabled: true
+
 
